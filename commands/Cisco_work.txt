@@ -1,0 +1,5 @@
+show clock
+terminal length 0
+terminal monitor
+
+

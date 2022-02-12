@@ -1,0 +1,6 @@
+
+show archive config differences nvram:startup-config system:running-config
+
+
+copy running-config startup-config
+
