@@ -1,0 +1,130 @@
+
+LINELEN = 0
+INDEX = 0
+SEPARATOR = ','
+
+getdir CURRENT
+
+HOSTLIST_PATH = 'hostlist.csv'
+PASSFILE = 'password.dat'
+
+;; ホストリストファイルオープン
+fileopen F_HOSTLIST HOSTLIST_PATH 0
+
+
+;; ホストリストの行数取得
+while 1
+    filereadln F_HOSTLIST LINE
+    if result=1 then 
+          break
+    endif
+    LINELEN = LINELEN + 1
+endwhile
+
+;; 配列設定(接続先IPアドレスを代入)
+strdim HOSTNAMELIST LINELEN
+strdim HOSTADDRLIST LINELEN
+strdim USERNAMELIST LINELEN
+strdim PROMPTSTRLIST LINELEN
+strdim COMMANDFILELIST LINELEN
+
+;; ホストリストの各行のデータ取得し配列に格納
+fileseek F_HOSTLIST 0 0
+while 1
+    filereadln F_HOSTLIST LINE
+    if result=1 then 
+          break
+    endif
+    strsplit LINE SEPARATOR
+    HOSTNAMELIST[INDEX] = groupmatchstr1
+    HOSTADDRLIST[INDEX] = groupmatchstr2
+    USERNAMELIST[INDEX] = groupmatchstr3
+    PROMPTSTRLIST[INDEX] = groupmatchstr4
+    COMMANDFILELIST[INDEX] = groupmatchstr5
+    INDEX = INDEX + 1
+endwhile
+
+;; ホストリストファイルクローズ
+fileclose F_HOSTLIST
+
+;; 接続先ホスト選択
+listbox '接続先' '接続ホスト選択' HOSTNAMELIST
+if result=-1 then
+    end
+endif
+HOSTADDR = HOSTADDRLIST[result]
+HOSTNAME = HOSTNAMELIST[result]
+USERNAME = USERNAMELIST[result]
+PROMPTSTR = PROMPTSTRLIST[result]
+COMMANDFILE = COMMANDFILELIST[result]
+
+;; パスワード取得(初回は入力要)
+PSKEY = USERNAME
+strconcat PSKEY '@'
+strconcat PSKEY HOSTNAME
+getpassword PASSFILE PSKEY PASSWORD
+ 
+;; 接続用コマンド組立て
+COMMAND = HOSTADDR
+strconcat COMMAND ':22 /ssh /2 /auth=password /user='
+strconcat COMMAND USERNAME
+strconcat COMMAND ' /passwd='
+strconcat COMMAND PASSWORD
+ 
+
+;; ログファイル
+getdate DATETIMEFOLDER '%Y%m%d'
+getdate MONTHFOLDER '%Y%m'
+LOGPATH = CURRENT
+strconcat LOGPATH '\logfiles\'
+strconcat LOGPATH MONTHFOLDER
+foldercreate LOGPATH
+strconcat LOGPATH '\'
+strconcat LOGPATH DATETIMEFOLDER
+foldercreate LOGPATH
+getdate DATETIMELOG '_%Y%m%d_%H%M%S.cisco'
+strconcat LOGPATH '\'
+strconcat LOGPATH HOSTNAME
+strconcat LOGPATH '_work'
+strconcat LOGPATH DATETIMELOG
+unlink
+
+;; 接続コマンド実行
+connect COMMAND
+
+;; ログファイルオープン
+loginfo logfilename
+if result <> -1 then
+   logclose
+   logopen LOGPATH 0 1
+else
+   logopen LOGPATH 0 1
+endif
+
+;; 接続時コマンド投入
+strlen COMMANDFILE
+if result <> 0 then
+    PROMPT = HOSTNAME
+    strconcat PROMPT PROMPTSTR
+
+    wait PROMPT
+    fileopen F_COMMAND COMMANDFILE 0
+    while 1
+        filereadln F_COMMAND LINE
+        if result=1 then 
+            break
+        endif
+        sendln LINE
+    endwhile
+    fileclose F_COMMAND
+    pause 1
+endif
+
+do
+    testlink
+    if result=1 then
+        logclose
+loop
+
+;; マクロ終了
+end

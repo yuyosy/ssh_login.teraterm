@@ -1,0 +1,56 @@
+
+LINELEN = 0
+INDEX = 0
+SEPARATOR = ','
+
+COMMANDSLIST_PATH = 'commandslist.csv'
+
+;; コマンドリストファイルオープン
+fileopen F_COMMANDSLIST COMMANDSLIST_PATH 0
+
+
+;; コマンドリストの行数取得
+while 1
+    filereadln F_COMMANDSLIST LINE
+    if result=1 then 
+          break
+    endif
+    LINELEN = LINELEN + 1
+endwhile
+
+;; 配列設定
+strdim NAMELIST LINELEN
+strdim PATHLIST LINELEN
+
+;; コマンドリストの各行のデータ取得し配列に格納
+fileseek F_COMMANDSLIST 0 0
+while 1
+    filereadln F_COMMANDSLIST LINE
+    if result=1 then 
+          break
+    endif
+    strsplit LINE SEPARATOR
+    NAMELIST[INDEX] = groupmatchstr1
+    PATHLIST[INDEX] = groupmatchstr2
+    INDEX = INDEX + 1
+endwhile
+
+;; コマンドリストファイルクローズ
+fileclose F_COMMANDSLIST
+
+listbox '投入コマンド' '投入コマンド選択' NAMELIST
+if result=-1 then
+    end
+endif
+NAME = NAMELIST[result]
+COMMANDFILE = PATHLIST[result]
+
+fileopen F_COMMANDFILE COMMANDFILE 0
+while 1
+    filereadln F_COMMANDFILE LINE
+    if result=1 then 
+          break
+    endif
+    sendln LINE
+endwhile
+fileclose F_COMMANDFILE
