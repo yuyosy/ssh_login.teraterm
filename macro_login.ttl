@@ -27,6 +27,10 @@ strdim HOSTADDRLIST LINELEN
 strdim USERNAMELIST LINELEN
 strdim PROMPTSTRLIST LINELEN
 strdim COMMANDFILELIST LINELEN
+strdim WRITEFILENAMELIST LINELEN
+
+;; 表示用配列 
+strdim LISTBOXITEMS LINELEN
 
 ;; ホストリストの各行のデータ取得し配列に格納
 fileseek F_HOSTLIST 0 0
@@ -41,6 +45,10 @@ while 1
     USERNAMELIST[INDEX] = groupmatchstr3
     PROMPTSTRLIST[INDEX] = groupmatchstr4
     COMMANDFILELIST[INDEX] = groupmatchstr5
+    WRITEFILENAMELIST[INDEX] = groupmatchstr6
+    item = groupmatchstr1
+    strconcat item groupmatchstr6
+    LISTBOXITEMS[INDEX] = item
     INDEX = INDEX + 1
 endwhile
 
@@ -48,7 +56,7 @@ endwhile
 fileclose F_HOSTLIST
 
 ;; 接続先ホスト選択
-listbox '接続先' '接続ホスト選択' HOSTNAMELIST
+listbox '接続先' '接続ホスト選択' LISTBOXITEMS
 if result=-1 then
     end
 endif
@@ -57,6 +65,8 @@ HOSTNAME = HOSTNAMELIST[result]
 USERNAME = USERNAMELIST[result]
 PROMPTSTR = PROMPTSTRLIST[result]
 COMMANDFILE = COMMANDFILELIST[result]
+; WRITEFILENAME = WRITEFILENAMELIST[result]
+FILENAME = LISTBOXITEMS[result]
 
 ;; パスワード取得(初回は入力要)
 PSKEY = USERNAME
@@ -84,8 +94,9 @@ strconcat LOGPATH DATETIMEFOLDER
 foldercreate LOGPATH
 getdate DATETIMELOG '_%Y%m%d_%H%M%S.cisco'
 strconcat LOGPATH '\'
-strconcat LOGPATH HOSTNAME
-strconcat LOGPATH '_work'
+; strconcat LOGPATH HOSTNAME
+; strconcat LOGPATH WRITEFILENAME
+strconcat LOGPATH FILENAME
 strconcat LOGPATH DATETIMELOG
 unlink
 
